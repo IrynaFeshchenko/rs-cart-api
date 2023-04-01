@@ -1,0 +1,61 @@
+CREATE TYPE status_enum AS ENUM('OPEN', 'ORDERED');
+
+CREATE TABLE carts (
+ id uuid DEFAULT uuid_generate_v4(),
+ user_id uuid NOT NULL,
+ created_at date,
+ updated_at date,
+ status status_enum
+);
+
+ALTER TABLE carts ADD CONSTRAINT uniquectm_const UNIQUE (id);
+
+CREATE TABLE cart_items (
+ cart_id uuid NOT NULL,
+ product_id uuid,
+ count integer NOT NULL,
+ CONSTRAINT fk_carts_id
+  FOREIGN KEY(cart_id)
+   REFERENCES carts(id)
+   ON DELETE CASCADE
+   ON UPDATE CASCADE
+);
+
+INSERT INTO carts (user_id, created_at, updated_at, status) VALUES
+ (uuid_generate_v4(),'1994-10-27', '1994-10-28', 'OPEN');
+
+DO $$
+DECLARE
+ temprow record;
+BEGIN
+FOR temprow IN
+  SELECT id FROM carts
+ LOOP
+  INSERT INTO cart_items (cart_id, product_id, count) VALUES (temprow.id, uuid_generate_v4(), (SELECT floor(random() * 10 + 1)::int));
+ END LOOP;
+END; $$
+
+
+CREATE TYPE status_order AS ENUM('INProgress', 'ORDERED');
+
+CREATE TABLE orders (
+ id uuid DEFAULT uuid_generate_v4(),
+ user_id uuid NOT NULL,
+ cart_id uuid,
+ payment JSON,
+ delivery JSON,
+ comments text,
+ status status_order,
+ total integer
+);
+
+DO $$
+DECLARE
+ temprow record;
+BEGIN
+FOR temprow IN
+  SELECT user_id, id FROM carts
+ LOOP
+  INSERT INTO orders (user_id, cart_id, comments, status, total) VALUES (temprow.user_id, temprow.id, 'Test', 'INProgress', 9);
+ END LOOP;
+END; $$
